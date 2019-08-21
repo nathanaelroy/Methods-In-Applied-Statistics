@@ -1,0 +1,92 @@
+---
+title: "Homework 4 Pettit Algorithm"
+author: "Nathanael Roy"
+date: "October 23, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+For our data we have 164 tests of a flight system, there were no failures in the first 137, then test 138 was a failure. There were no failures on tests 139 through 162, then 163 failed and 164 succeeded. We can encode this data as a series of ones and zeros:
+```{r}
+data = c(rep(0,137),1,rep(0,24),1,0)
+```
+Suppose we want to 
+
+
+ Suppose we consider a statistic of the form 
+ $$U_T = T S_t - tS_T$$
+where $S_t = \sum_{i=1}^t x_i$
+
+The Pettitt algorithm looks to identify a possible change point value by identifying the $argmin(U_T)$ for our sequence as well as every sequence with exactly the same number of 1s and 0s and then seeing where are value falls in the possible distribution of $U_T$ values. First, it would be good to have a general function to calculate $argmin(U_T)$ for our sequence. 
+
+```{r}
+#First we iterate from position 1 through T-1
+Calc.U <- function(data){
+  n = length(data)
+  U.t = rep(0,n-1)
+  for(i in 1:(n-1)){
+    U.t[i] = n*sum(data[1:i]) - i*sum(data)
+  }
+  which(U.t==min(U.t))
+
+  return(min(U.t))
+}
+U.t.data = Calc.U(data)
+```
+
+
+We then create all of the possible T choose m sequences of Xi that preserve $S_t = m$ and for each sequence calculate the U_t value.
+
+
+```{r}
+All.u = c()
+for(i in 1:163){
+  for(j in (i+1):164){
+    new.data = rep(0,164)
+    new.data[i] = 1
+    new.data[j] = 1
+    All.u = c(All.u,Calc.U(new.data))
+  }
+}
+```
+Using this new data point we can then plot a histogram of the possible values of U. A p value for our statistic is how extreme a value is compared to the other values of $U_t$ that are possible. We can calculate this value by dividing the number of values less than the value of our U by the total possible values of U.
+
+
+```{r}
+U.t.data
+hist(All.u)
+p = length(which(All.u < U.t.data))/length(All.u)
+print(p)
+```
+Given our histogram and our p value we conclde that a change point happened. 
+
+For the second part of our analysis we might ask what happens if the next 10 trials were successes, if our analysis would change?
+```{r}
+next.ten = c(rep(0,137),1,rep(0,24),1,0)
+
+
+U.t.next.ten = Calc.U(data)
+
+All.u.next.ten = c()
+for(i in 1:173){
+  for(j in (i+1):174){
+    new.data = rep(0,174)
+    new.data[i] = 1
+    new.data[j] = 1
+    All.u.next.ten = c(All.u.next.ten,Calc.U(new.data))
+  }
+}
+
+
+U.t.next.ten
+hist(All.u.next.ten)
+p = length(which(All.u.next.ten < U.t.next.ten))/length(All.u.next.ten)
+print(p)
+```
+This changes the analysis by a bit but it still seems likely that some sort of change has happened.
+
+
+
+
+
+

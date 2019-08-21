@@ -1,0 +1,57 @@
+---
+title: "Homework 1 Stat 293"
+output:
+  html_document: default
+  pdf_document: default
+---
+The following loads the data into R and performs GEE using the library GEE in R. 
+
+This library implements the algorithm to get estimates for the intercept and time. There is no group structure to this data so time is the only variable of interest. The working correlation structure below is that of independent draws. Specifying as poisson family makes it so that the link function will be a logarithm 
+```{r}
+library(gee)
+Stat.293.data.1 <- read.csv("C:/Users/Acer/Desktop/Stat 293 data 1.csv")
+gee(y~time,id=person,data=Stat.293.data.1, family=poisson,corstr = "exchangeable")
+```
+
+The following code gives a simulation of 1000 data sets using our model given in class, echo is set to false so we don't have a huge amount of output
+
+
+```{r, echo=FALSE,results=FALSE,warning=FALSE,message=FALSE}
+#beta0 = -.5722
+#beta1 = 3.036
+#2 simulating from actual model:
+
+#our model is yij ~ Pois[e^(b -1+ 3tij)] where bi is distributed N(0,1)
+
+sim.data <- function(){
+  d.f = c()
+  b <- rnorm(500)
+  for(i in 1:500){
+    for(j in c(0,.5,1)){
+     y <- rpois(1,lambda=exp(b[i]-1+3*j))
+     d.f = rbind(d.f,c(i,j,y))
+    }
+  }
+  colnames(d.f) = c("person","time","y")
+  d.f = as.data.frame(d.f)
+  return(d.f)
+}
+
+sim.data.coefs = function(n=1000){
+  estimates = c()
+  for(i in 1:n){
+    x = sim.data()
+    mod = gee(y~time,id=person,data=x, family=poisson,corstr = "exchangeable")
+    estimates = rbind(estimates,mod$coefficients)
+  }
+  return(estimates)
+}
+df.coef = sim.data.coefs(1000)
+```
+
+
+This gives us a covariance matrix of the parameters
+```{r}
+var(df.coef)
+
+```

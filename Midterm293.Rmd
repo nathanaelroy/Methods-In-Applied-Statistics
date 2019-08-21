@@ -1,0 +1,13 @@
+---
+title: "Midterm Code"
+author: "Nathanael Roy"
+date: "October 31, 2018"
+output: html_document
+---
+
+```{r}
+Midterm.data <- read.csv("C:/Users/Acer/Desktop/Unemployment and Industrial Production Dataset.csv")
+plot(Midterm.data)
+model = nls(y~a + 1/(x*b+c),data = Midterm.data,start = c(a=3,b=.009,c=-.57))
+lines(Midterm.data$x,predict(model))
+```

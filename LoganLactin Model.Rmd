@@ -1,0 +1,63 @@
+---
+title: "Homework 3-Logan Lactin on Fluctuating Data"
+author: Nathanael Roy
+output: html_document
+---
+
+The following code fits the Logan-Lactin model to the fluctating data in the same way that we fit the model in class for the constant data. In the process of fitting the data the default R algorithm did not converge, instead I searched and used a different package (minpack) to get better starting values and then used near these fitted values to then use nls in R.
+
+We can also see from this that the model predicts a maximum value at around 30 and we also calculate the roots that the growth model crosses the x access, or hits 0, at around 12 and around 37.5.
+
+```{r}
+data <- read.csv("C:/Users/Acer/Desktop/Growth Model Data Set.csv")
+# Fluctuating Data
+
+data.f<-data[123:228,]
+R<-1/data[123:228,3]
+T1<-data[123:228,2]
+
+rho_start <-.006
+Tm_start <- 46
+delta_start <- 4.3
+lam_start <- -1.0
+
+
+# was having trouble fitting using nls so used minpack
+# library(minpack.lm)
+# fit.f.mp = nlsLM(R~exp(rho*T1)-exp(rho*Tm-(Tm-T1)/delta)+lam, start = list(rho=rho_start,Tm=Tm_start,delta=delta_start,lam=lam_start))
+# coef(curve.nlslrc)
+fit.f <- nls(R~exp(rho*T1)-exp(rho*Tm-(Tm-T1)/delta)+lam, start = list(rho=rho_start,Tm=Tm_start,delta=delta_start,lam=lam_start))
+coef(fit.f)
+
+f<-function(T1,rho,Tm,delta,lam) {
+  ans<-exp(rho*T1)-exp(rho*Tm-(Tm-T1)/delta)+lam
+  return(ans)
+}
+
+rho<-.006744351
+Tm<-45.691988
+delta<-4.28849
+lam<--1.0833
+
+Topt<-Tm-delta*log(delta*rho)/(delta*rho-1)
+rTopt<-f(Topt,rho,Tm,delta,lam)
+print(c(Topt,rTopt))
+
+Tval<-seq(5,40,.01)
+n<-length(Tval)
+y<-vector("numeric",n)
+for (k in 1:n) {
+  y[k]<-f(Tval[k],rho,Tm,delta,lam)
+}
+
+plot(Tval,y,type="l",axes=F,xlab="Temperature",ylab="Growth Rate",xlim=c(5,40),ylim=c(0,.15))
+axis(1,at=c(5,10,15,20,25,30,35,40),labels=c("5","10","15","20","25","30","35","40"))
+axis(2,at=c(0,.03,.06,.09,.12,.15),labels=c("0",".03",".06",".09",".12",".15"))
+points(T1,R)
+
+LDT<-uniroot(f,c(5,15),rho,Tm,delta,lam)
+print(LDT)
+
+UDT<-uniroot(f,c(35,40),rho,Tm,delta,lam)
+print(UDT)
+```

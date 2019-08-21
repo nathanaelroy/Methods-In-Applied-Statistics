@@ -1,0 +1,76 @@
+---
+title: "Stat 293 HW Gibbs"
+author: "Nathanael Roy"
+date: "October 28, 2018"
+output: html_document
+---
+Bayesian Change Point analysis with Poisson Data
+
+For our Gibbs sampler we have parameters ($\theta_1,\theta_2,k$) such that the prior distributions of the first two are gamma distributions and the prior of k is a uniform across 1 through 75 (since we have 76 years)
+
+```{r}
+mode.f = function(x){
+  x.pos = unique(x)
+  the.mode = x.pos[which.max(tabulate(match(x,x.pos)))]
+  return(the.mode)
+  }
+
+#first we input data
+invasivespecies <- read.delim("~/invasivespecies.txt", header=FALSE,col.names = c("year","number"))
+attach(invasivespecies)
+n= length(number)
+a=1
+b=1
+c=1
+d=1
+k = sample(1:(n-1),1)
+theta1 = rgamma(1,a,b)
+theta2 = rgamma(1,c,d)
+k.pos = 1:(n-1)
+part.sums = rep(0,75)
+  for(i in 1:75){
+    part.sums[i] = sum(number[1:i])
+  }
+  
+Gibbs.step = function(theta1.start=theta1,theta2.start=theta2,k.start=k){
+  y.sum = sum(number[1:k.start])
+  y.rem = sum(number[(k.start+1):n])
+  theta1.next = rgamma(1,y.sum+a,k.start+b)
+  theta2.next = rgamma(1,y.rem+c,n-k.start+d)
+  log.pmf.prop = part.sums*log(theta1.next)-part.sums*log(theta2.next) + k.pos*(theta2.next-theta1.next)
+  pmf.prop = exp(log.pmf.prop-max(log.pmf.prop))
+  k.next = sample(k.pos,1,prob=pmf.prop)
+  return(c(theta1.next,theta2.next,k.next))
+}
+#Testing
+Gibbs.step(theta1,theta2,k)
+
+gather.Gibbs <- function(strt = c(theta1,theta2,k),burnin=100,n.steps = 10000){
+  state.curr <- strt
+  for(i in 1:burnin){
+    state.curr <- Gibbs.step(state.curr[1],state.curr[2],state.curr[3])
+  }
+  dt = c()
+  for (i in 1:n.steps){
+    state.curr = Gibbs.step(state.curr[1],state.curr[2],state.curr[3])
+    dt = rbind(dt,state.curr)
+  }
+  return(dt)
+}
+new.data = gather.Gibbs()
+
+hist(new.data[,1])
+hist(new.data[,2])
+hist(new.data[,3])
+
+mean(new.data[,1])
+mean(new.data[,2])
+sd(new.data[,1])
+sd(new.data[,2])
+
+mode.f(new.data[,3])
+sd(new.data[,3])
+```
+After we run our Gibbs sampler we look at histogram to get a good idea of where the change point estimates are. It seems for $theta_1$ and $theta_2$ we can take the means to get a good idea of the estimates for them and then take the standard deviation to get the standard errors
+
+For the value k we take the mode since the histogram shows us that the distribution is returning to two different values of k. We then take the standard deviation in the standard way. We get a k of 6, a theta1 of around 10 and a theta2 of around 7
